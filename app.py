@@ -116,3 +116,23 @@ def stats():
         url = dict(url)
         urls.append(dict(url))
     return jsonify({'urls': urls})
+
+@app.route('/delete/<id>', methods = ['DELETE'])
+def delete_url(id):
+    conn = get_db_connection()
+    # Fetch the short URL associated with the provided ID from the database
+    url_data = conn.execute('SELECT short_url FROM urls WHERE id = ?', (id,)).fetchone()
+    
+    if url_data is None:
+        conn.close()
+        resp = Response(json.dumps({"message":"URL with given ID not found"}), mimetype='application/json')
+        resp.status_code = 404
+        return resp
+    
+    short_url = url_data['short_url']
+    
+    conn.execute('DELETE FROM urls WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': f'URL with ID {id} and short URL {short_url} has been deleted'})

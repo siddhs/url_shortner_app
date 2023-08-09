@@ -92,5 +92,23 @@ class TestApp(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('urls', data)
 
+    @patch('app.get_db_connection')
+    def test_delete_url_api(self, mock_get_db_connection):
+        # Mock the database connection
+        mock_conn = MagicMock()
+        mock_get_db_connection.return_value = mock_conn
+
+        # Mock the execute method to return mock URL data
+        mock_cursor = MagicMock()
+        mock_conn.execute.return_value = mock_cursor
+        mock_cursor.fetchone.return_value = {'short_url': 'http://127.0.0.1:5000/ZO0g'}
+
+        # Assuming you have an existing URL with ID 'ZO0g'
+        response = self.app.delete('/delete/ZO0g')
+
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 200)
+
 if __name__ == '__main__':
     unittest.main()
