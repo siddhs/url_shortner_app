@@ -101,3 +101,18 @@ def url_redirect(id):
         resp = Response(json.dumps({"message":"Invalid URL!!"}), mimetype='application/json')
         resp.status_code = 400
         return resp
+
+@app.route('/stats')
+def stats():
+    conn = get_db_connection()
+
+    # Fetch all data from the database
+    db_urls = conn.execute('SELECT id, created, original_url, short_url, expiry, clicks FROM urls'
+                           ).fetchall()
+    conn.close()
+
+    urls = []
+    for url in db_urls:
+        url = dict(url)
+        urls.append(dict(url))
+    return jsonify({'urls': urls})

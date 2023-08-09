@@ -65,11 +65,32 @@ class TestApp(unittest.TestCase):
         mock_conn.execute.return_value = mock_cursor
         mock_cursor.fetchone.return_value = {'original_url': 'https://example.com', 'clicks': 0}
 
-        # Assuming you have an existing URL with ID 'ZO0g'
+        # Assuming we have an existing URL with ID 'ZO0g'
         response = self.app.get('/ZO0g')
 
         self.assertEqual(response.status_code, 302)  # Redirect status
 
+    @patch('app.get_db_connection')
+    def test_stats_api(self, mock_get_db_connection):
+        # Mock the database connection
+        mock_conn = MagicMock()
+        mock_get_db_connection.return_value = mock_conn
+
+        # Mock the execute method to return mock URL data
+        mock_cursor = MagicMock()
+        mock_conn.execute.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = [{'id': 1, 
+                                              'created': '2023-06-18', 
+                                              'original_url': 'https://example.com', 
+                                              'short_url': 'http://127.0.0.1:5000/ZO0g', 
+                                              'expiry': '2023-12-31', 
+                                              'clicks': 0}]
+
+        response = self.app.get('/stats')
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('urls', data)
 
 if __name__ == '__main__':
     unittest.main()
