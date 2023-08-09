@@ -69,3 +69,35 @@ def index():
     if request.method == 'GET':
         return jsonify({"message":"Welcome to URL Shortner App!"})
 
+@app.route('/<id>')
+def url_redirect(id):
+    conn = get_db_connection()
+    
+    if id:
+        # Retrieve URL data from the database based on the provided ID, the ID will be a hash of a long url
+        url_data = conn.execute('SELECT original_url, clicks FROM urls'
+                                ' WHERE id = (?)', (id,)
+                                ).fetchone()
+        
+        if url_data is None:
+            conn.close()
+            resp = Response(json.dumps({"message":"URL with given ID not found"}), mimetype='application/json')
+            resp.status_code = 404
+            return resp
+        
+        original_url = url_data['original_url']
+        clicks = url_data['clicks']
+
+        # Increment the clicks count and update it in the database
+        conn.execute('UPDATE urls SET clicks = ? WHERE id = ?',
+                     (clicks+1, id))
+
+        conn.commit()
+        conn.close()
+
+        # Redirect the user to the original URL
+        return redirect(original_url)
+    else:
+        resp = Response(json.dumps({"message":"Invalid URL!!"}), mimetype='application/json')
+        resp.status_code = 400
+        return resp
