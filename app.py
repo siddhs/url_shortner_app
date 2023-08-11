@@ -2,6 +2,7 @@ import json
 import sqlite3
 from hashids import Hashids
 from flask import Flask, render_template, request, redirect, jsonify, Response
+from flask_cors import CORS
 import validators
 import datetime
 
@@ -17,6 +18,7 @@ def get_db_connection():
     return conn
 
 app = Flask(__name__)
+CORS(app)
 app.config['SECRET_KEY'] = "q)D)^LnGUjt^x`V3H1YP0g8~*!W!'8"
 
 # Hashids is a library that generates a short unique ID from integers.
@@ -75,7 +77,7 @@ def url_redirect(id):
     
     if id:
         # Retrieve URL data from the database based on the provided ID, the ID will be a hash of a long url
-        url_data = conn.execute('SELECT original_url, clicks FROM urls'
+        url_data = conn.execute('SELECT original_url, clicks, created FROM urls'
                                 ' WHERE id = (?)', (id,)
                                 ).fetchone()
         
@@ -87,10 +89,24 @@ def url_redirect(id):
         
         original_url = url_data['original_url']
         clicks = url_data['clicks']
+        created = datetime.datetime.strptime(url_data['created'], '%Y-%m-%d %H:%M:%S')
+
+
+
+        # Get the current timestamp
+        current_time = datetime.datetime.now()
 
         # Increment the clicks count and update it in the database
         conn.execute('UPDATE urls SET clicks = ? WHERE id = ?',
                      (clicks+1, id))
+        
+        # Update the clicks in the last 24 hours and past week within a single query
+        if created >= current_time - datetime.timedelta(days=7):
+            conn.execute('UPDATE urls SET clicks_past_week = clicks_past_week + 1 WHERE id = ?',
+                         (id,))
+            if created >= current_time - datetime.timedelta(hours=24):
+                conn.execute('UPDATE urls SET clicks_last_24h = clicks_last_24h + 1 WHERE id = ?',
+                             (id,))
 
         conn.commit()
         conn.close()
@@ -107,7 +123,7 @@ def stats():
     conn = get_db_connection()
 
     # Fetch all data from the database
-    db_urls = conn.execute('SELECT id, created, original_url, short_url, expiry, clicks FROM urls'
+    db_urls = conn.execute('SELECT * FROM urls'
                            ).fetchall()
     conn.close()
 

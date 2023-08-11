@@ -6,5 +6,7 @@ CREATE TABLE urls (
     original_url TEXT NOT NULL,
     short_url TEXT,
     expiry TIMESTAMP DEFAULT (DATETIME(CURRENT_TIMESTAMP, '+10 years')),
-    clicks INTEGER NOT NULL DEFAULT 0
+    clicks INTEGER NOT NULL DEFAULT 0,
+    clicks_last_24h INTEGER NOT NULL DEFAULT 0,
+    clicks_past_week INTEGER NOT NULL DEFAULT 0
 );
